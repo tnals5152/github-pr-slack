@@ -9,6 +9,10 @@ import (
 type NewTime time.Time
 
 func (n *NewTime) UnmarshalJSON(data []byte) (err error) {
+
+	if len(data) == 0 || string(data) == "null" {
+		return
+	}
 	var s string
 	err = json.Unmarshal(data, &s)
 	if err != nil {

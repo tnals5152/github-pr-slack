@@ -120,7 +120,7 @@ func GetAndDoRepo(gitToken string, repoInfo models.RepoInfo) (errorSlice []strin
 
 			fmt.Println(reviewers)
 
-			text := slack.CreateReviewersMessage(reviewers)
+			text := slack.CreateReviewersMessage(reviewers, PRInfo.User.Login)
 
 			text = PRInfo.Url + "\n해당 PR 리뷰를 하거나 승인하세요.\n" + text
 

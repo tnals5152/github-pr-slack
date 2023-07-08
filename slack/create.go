@@ -51,9 +51,19 @@ func SendTheadMessage(token, channel, parentID, text string) {
 
 }
 
-func CreateReviewersMessage(reviewers []string) (text string) {
-
+func CreateReviewersMessage(reviewers []string, login string) (text string) {
 	reviewersMap := viper.GetStringMapString(constant.REVIEWERS)
+
+	if len(reviewers) == 0 {
+		name, ok := reviewersMap[login]
+
+		if !ok {
+			return
+		}
+
+		text += "<@" + name + "> 리뷰어를 지정하세요."
+		return
+	}
 
 	for _, reviewer := range reviewers {
 		name, ok := reviewersMap[reviewer]

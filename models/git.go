@@ -16,9 +16,9 @@ type PRInfo struct {
 	State              string  `json:"state"`
 	User               User    `json:"user"`
 	RequestedReviewers []User  `json:"requested_reviewers"`
-	UpdatedAt          NewTime `json:"updated_at"`
-	CreatedAt          NewTime `json:"created_at"`
-	ClosedAt           NewTime `json:"closed_at"`
+	UpdatedAt          NewTime `json:"updated_at,omitempty"`
+	CreatedAt          NewTime `json:"created_at,omitempty"`
+	ClosedAt           NewTime `json:"closed_at,omitempty"`
 }
 
 type User struct {
