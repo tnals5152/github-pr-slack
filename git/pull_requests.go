@@ -102,15 +102,20 @@ func GetAndDoRepo(gitToken string, repoInfo models.RepoInfo) (errorSlice []strin
 		return
 	}
 
-	slack.DeleteTheadMessage(
+	messageResponse, err := slack.DeleteTheadMessage(
 		slackBot,
 		slackChannel,
 		&repoInfo,
 	)
 
+	if err != nil {
+		errorSlice = append(errorSlice, err.Error())
+		return
+	}
+
 	for _, PRInfo := range PRInfos {
 		if IsTimeoutPR(PRInfo) {
-			var reviewers []string
+			var reviewers map[string]string
 			reviewers, err = GetReviewers(PRInfo, gitToken)
 
 			if err != nil {
@@ -120,9 +125,18 @@ func GetAndDoRepo(gitToken string, repoInfo models.RepoInfo) (errorSlice []strin
 
 			fmt.Println(reviewers)
 
-			text := slack.CreateReviewersMessage(reviewers, PRInfo.User.Login)
+			text, reviewerRequest := slack.CreateReviewersMessage(reviewers, PRInfo.User.Login)
 
-			text = PRInfo.Url + "\n해당 PR 리뷰를 하거나 승인하세요.\n" + text
+			if !reviewerRequest {
+				afterAssign := messageResponse.HasRequestReviewAfterAssign(PRInfo.Links.Html.Href)
+
+				// 리뷰어 등록 후 3일 이전이면 다시 메시지 보내지 않는다.
+				if !afterAssign {
+					continue
+				}
+			}
+
+			text = PRInfo.Links.Html.Href + "\n" + text
 
 			slack.SendTheadMessage(
 				slackBot,
@@ -169,41 +183,25 @@ func IsTimeoutPR(PRInfo *models.PRInfo) (timout bool) {
 		return
 	}
 
-	now := time.Now().Add(9 * time.Hour)
-
 	created := time.Time(PRInfo.CreatedAt).Add(9 * time.Hour)
 
-	PRDay := 3
+	reviewDay := viper.GetInt(constant.REVIEW_DAY)
 
-	// 3일 지나면 slack 알림 전송
-	for i := 0; i <= 3; i++ {
-		nextDay := created.AddDate(0, 0, i)
-		if nextDay.Weekday() == time.Saturday || nextDay.Weekday() == time.Sunday {
-			PRDay++
-		}
+	if reviewDay == 0 {
+		reviewDay = 3
 	}
 
-	PRtime := created.AddDate(0, 0, PRDay)
-
-	for {
-		if PRtime.Weekday() == time.Saturday || PRtime.Weekday() == time.Sunday {
-			PRtime = PRtime.AddDate(0, 0, 1)
-			continue
-		}
-		break
-	}
-
-	return PRtime.Before(now)
+	return utils.IsAfterDay(created, reviewDay)
 
 }
 
-func GetReviewers(PRInfo *models.PRInfo, gitToken string) (reviewerSlice []string, err error) {
+func GetReviewers(PRInfo *models.PRInfo, gitToken string) (reviewers map[string]string, err error) {
 	// configReviewers := viper.GetStringMapString(constant.REVIEWERS)
 
-	reviewers := make(map[string]bool)
+	reviewers = make(map[string]string)
 
 	for _, requestedReviewer := range PRInfo.RequestedReviewers {
-		reviewers[requestedReviewer.Login] = false
+		reviewers[requestedReviewer.Login] = constant.NOTHING
 	}
 
 	body, err := CallGitUrl(PRInfo.Url+"/reviews", gitToken)
@@ -221,23 +219,15 @@ func GetReviewers(PRInfo *models.PRInfo, gitToken string) (reviewerSlice []strin
 	}
 
 	for _, PRReview := range PRReviews {
-		if reviewers[PRReview.User.Login] {
+		if _, ok := reviewers[PRReview.User.Login]; ok {
 			continue
 		}
-		state := false
+		state := constant.COMMENTED
 		if PRReview.State == constant.APPROVED {
-			state = true
+			state = constant.APPROVED
 		}
 
 		reviewers[PRReview.User.Login] = state
-	}
-
-	for reviewer, state := range reviewers {
-		if state || reviewer == PRInfo.User.Login {
-			continue
-		}
-
-		reviewerSlice = append(reviewerSlice, reviewer)
 	}
 
 	return

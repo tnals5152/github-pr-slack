@@ -19,6 +19,11 @@ type PRInfo struct {
 	UpdatedAt          NewTime `json:"updated_at,omitempty"`
 	CreatedAt          NewTime `json:"created_at,omitempty"`
 	ClosedAt           NewTime `json:"closed_at,omitempty"`
+	Links              struct {
+		Html struct {
+			Href string `json:"href"`
+		} `json:"html"`
+	} `json:"_links"`
 }
 
 type User struct {

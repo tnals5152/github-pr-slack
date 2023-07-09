@@ -13,6 +13,10 @@ const (
 	REPO_PARAM        = "{repo}"
 	PULL_NUMBER_PARAM = "{pull_number}"
 
-	APPROVED = "APPROVED"
-	// COMMENTED = "COMMENTED"
+	APPROVED  = "APPROVED"
+	COMMENTED = "COMMENTED"
+	NOTHING   = "NOTHING"
+
+	REQUEST_REVIEWER = "리뷰어를 지정하세요."
+	REQUEST_REVIEW   = "리뷰를 요청합니다.\n"
 )

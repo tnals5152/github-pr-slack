@@ -3,12 +3,14 @@ package constant
 import "time"
 
 const (
-	REPO_INFO        = "repo-info"
-	REVIEWERS        = "reviewers"
-	GIT_TOKEN        = "git-token"
-	SLACK_BOT_TOKEN  = "slack.bot-token"
-	SLACK_CHANNEL    = "slack.channel"
-	SLACK_USER_TOKEN = "slack.user-token"
+	REPO_INFO         = "repo-info"
+	REVIEWERS         = "reviewers"
+	GIT_TOKEN         = "git-token"
+	SLACK_BOT_TOKEN   = "slack.bot-token"
+	SLACK_CHANNEL     = "slack.channel"
+	SLACK_USER_TOKEN  = "slack.user-token"
+	SLACK_BOT_USER_ID = "slack.bot-user-id"
+	REVIEW_DAY        = "review-day"
 
 	TIMEOUT_HTTP = "timeout.http"
 )

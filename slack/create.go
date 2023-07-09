@@ -51,7 +51,7 @@ func SendTheadMessage(token, channel, parentID, text string) {
 
 }
 
-func CreateReviewersMessage(reviewers []string, login string) (text string) {
+func CreateReviewersMessage(reviewers map[string]string, login string) (text string, reviewerRequest bool) {
 	reviewersMap := viper.GetStringMapString(constant.REVIEWERS)
 
 	if len(reviewers) == 0 {
@@ -61,23 +61,31 @@ func CreateReviewersMessage(reviewers []string, login string) (text string) {
 			return
 		}
 
-		text += "<@" + name + "> 리뷰어를 지정하세요."
+		text += "<@" + name + "> " + constant.REQUEST_REVIEWER
+		reviewerRequest = true
 		return
 	}
 
-	for _, reviewer := range reviewers {
-		name, ok := reviewersMap[reviewer]
+	text = constant.REQUEST_REVIEW + "\n"
+
+	for reviewerName, state := range reviewers {
+		name, ok := reviewersMap[reviewerName]
 
 		if !ok {
 			continue
 		}
 
-		text += "<@" + name + "> "
+		if state == constant.COMMENTED {
+			text += "APPROVE 요청 - <@" + name + ">\n"
+		} else if state == constant.NOTHING {
+			text += "PR 리뷰 요청 - <@" + name + ">\n"
+		}
+
 	}
 	return
 }
 
-func DeleteTheadMessage(token, channel string, repoInfo *models.RepoInfo) (err error) {
+func DeleteTheadMessage(token, channel string, repoInfo *models.RepoInfo) (messageResponse models.ResponseOkMessage, err error) {
 
 	request, err := http.NewRequest(
 		http.MethodGet,
@@ -107,20 +115,21 @@ func DeleteTheadMessage(token, channel string, repoInfo *models.RepoInfo) (err e
 
 	body, err := io.ReadAll(response.Body)
 
-	var messageResponse models.ResponseOkMessage
+	var bodyAny any
 
 	err = json.Unmarshal(body, &messageResponse)
+	err = json.Unmarshal(body, &bodyAny)
 
 	if err != nil {
 		return
 	}
 
 	for _, message := range messageResponse.Messages {
-		if message.TheadTs == message.Ts || message.TheadTs == "" {
-			continue
+		if message.ToDelete() {
+			DeleteMessage(token, channel, message.Ts)
 		}
-		DeleteMessage(token, channel, message.Ts)
 	}
+
 	return
 }
 
